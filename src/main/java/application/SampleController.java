@@ -5,6 +5,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.*;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
 
 //import javax.sound.*;
 import javax.sound.sampled.AudioFileFormat;
@@ -17,6 +21,10 @@ import javax.sound.sampled.SourceDataLine;
 import javax.sound.sampled.TargetDataLine;
 import javax.sound.sampled.UnsupportedAudioFileException;
 
+import com.ibm.watson.developer_cloud.http.HttpMediaType;
+import com.ibm.watson.developer_cloud.speech_to_text.v1.SpeechToText;
+import com.ibm.watson.developer_cloud.speech_to_text.v1.model.RecognizeOptions;
+import com.ibm.watson.developer_cloud.speech_to_text.v1.model.SpeechRecognitionResults;
 import org.omg.CORBA.portable.OutputStream;
 
 import javafx.scene.media.Media;
@@ -137,6 +145,71 @@ public class SampleController {
 					musicplayer.seek(Duration.ZERO);
 				}
 			});
+		}
+	}
+
+	public void sendCommand(){
+		try {
+
+			SpeechToText service = new SpeechToText();
+			service.setUsernameAndPassword("c26521b4-64ef-4a9a-b632-26c0de1105bf", "EWgpz7Kkkpoz");
+			//String filePath = "file:" + new java.io.File("").getAbsolutePath() + "/data/RecordAudio.wav";
+			String filePath = new java.io.File("").getAbsolutePath() + "/data/RecordAudio.wav";
+
+			filePath = filePath.replace("\\", "/");
+			File audio = new File(filePath);
+
+			//see http://www.ibm.com/smarterplanet/us/en/ibmwatson/developercloud/apis/#!/speech-to-text/recognizeSession
+			//for parameter explanation
+
+			Map<String, Object> params = new HashMap<String, Object>();
+
+			RecognizeOptions options = new RecognizeOptions.Builder()
+					.audio(audio)
+					.contentType(HttpMediaType.AUDIO_WAV)
+					.build();
+
+			SpeechRecognitionResults transcript = service.recognize(options).execute();
+			System.out.println(transcript.getResults());
+			String trs = transcript.toString();
+			trs = trs.substring((trs.indexOf("transcript") + 12));
+			trs = trs.substring(0, trs.indexOf(","));
+			trs= trs.substring(trs.indexOf("\"") + 1, trs.lastIndexOf("\""));
+
+			try {
+				String urlParameters = "message=" + trs;
+				String request = "https://smartroomx.eu-gb.mybluemix.net/sound";
+				URL url = new URL(request);
+
+				HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+				connection.setDoOutput(true);
+				connection.setDoInput(true);
+				connection.setInstanceFollowRedirects(false);
+				connection.setRequestMethod("POST");
+				connection.setRequestProperty("Content-Type","application/x-www-form-urlencoded");
+				connection.setRequestProperty("charset", "utf-8");
+				connection.setRequestProperty("Content-Length","" + Integer.toString(urlParameters.getBytes().length));
+				connection.setUseCaches(false);
+				System.out.println("Connected to the url");
+				DataOutputStream wr = new DataOutputStream(connection.getOutputStream());
+				System.out.println("Sending message");
+				wr.writeBytes(urlParameters);
+				System.out.println("Sent");
+				int code = connection.getResponseCode();
+				System.out.println(code);
+				wr.flush();
+				wr.close();
+				connection.disconnect();
+
+			}
+			catch(Exception e){
+				System.out.println(e);
+				System.out.println("Post exception");
+			}
+		}
+		catch(Exception e){
+			System.out.println(e);
+			System.out.println("Speech to text exception");
 		}
 	}
 
