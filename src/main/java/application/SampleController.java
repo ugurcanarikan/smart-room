@@ -196,7 +196,9 @@ public class SampleController {
 				wr.writeBytes(urlParameters);
 				System.out.println("Sent");
 				int code = connection.getResponseCode();
-				System.out.println(code);
+				//System.out.println(code);
+				if(code == 200)
+					System.out.println("Success with the response code : 200");
 				wr.flush();
 				wr.close();
 				connection.disconnect();
