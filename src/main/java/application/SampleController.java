@@ -7,6 +7,7 @@ import java.io.InputStream;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLConnection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -25,11 +26,16 @@ import com.ibm.watson.developer_cloud.http.HttpMediaType;
 import com.ibm.watson.developer_cloud.speech_to_text.v1.SpeechToText;
 import com.ibm.watson.developer_cloud.speech_to_text.v1.model.RecognizeOptions;
 import com.ibm.watson.developer_cloud.speech_to_text.v1.model.SpeechRecognitionResults;
+import org.json.simple.JSONObject;
 import org.omg.CORBA.portable.OutputStream;
 
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
 import javafx.util.Duration;
+
+import java.net.URI;
+import java.util.Scanner;
+
 
 public class SampleController {
 
@@ -150,12 +156,9 @@ public class SampleController {
 
 	public void sendCommand(){
 		try {
-
 			SpeechToText service = new SpeechToText();
 			service.setUsernameAndPassword("c26521b4-64ef-4a9a-b632-26c0de1105bf", "EWgpz7Kkkpoz");
-			//String filePath = "file:" + new java.io.File("").getAbsolutePath() + "/data/RecordAudio.wav";
 			String filePath = new java.io.File("").getAbsolutePath() + "/data/RecordAudio.wav";
-
 			filePath = filePath.replace("\\", "/");
 			File audio = new File(filePath);
 
@@ -172,6 +175,10 @@ public class SampleController {
 			SpeechRecognitionResults transcript = service.recognize(options).execute();
 			System.out.println(transcript.getResults());
 			String trs = transcript.toString();
+			if(trs.length() == 0){
+			    System.out.println("Cannot receive command");
+			    return;
+            }
 			trs = trs.substring((trs.indexOf("transcript") + 12));
 			trs = trs.substring(0, trs.indexOf(","));
 			trs= trs.substring(trs.indexOf("\"") + 1, trs.lastIndexOf("\""));
@@ -196,14 +203,36 @@ public class SampleController {
 				wr.writeBytes(urlParameters);
 				System.out.println("Sent");
 				int code = connection.getResponseCode();
-				//System.out.println(code);
 				if(code == 200)
-					System.out.println("Success with the response code : 200");
+					System.out.println("Success with the response code : " + code);
+				else
+					System.out.println("Response code : " + code);
 				wr.flush();
 				wr.close();
 				connection.disconnect();
 
-			}
+                String content = null;
+                URLConnection connection2 = null;
+                try {
+                    // Make a URL to the web page
+                    URL url2 = new URL("http://smartroomx.eu-gb.mybluemix.net/ugur");
+
+                    // Get the input stream through URL Connection
+                    URLConnection con = url2.openConnection();
+                    InputStream is =con.getInputStream();
+
+                    BufferedReader br = new BufferedReader(new InputStreamReader(is));
+
+                    String line = null;
+
+                    // read each line and write to System.out
+                    while ((line = br.readLine()) != null) {
+                        System.out.println(line.substring(line.indexOf(":") + 1, line.indexOf("}")));
+                    }
+                }catch ( Exception ex ) {
+                    ex.printStackTrace();
+                }
+            }
 			catch(Exception e){
 				System.out.println(e);
 				System.out.println("Post exception");
@@ -214,5 +243,46 @@ public class SampleController {
 			System.out.println("Speech to text exception");
 		}
 	}
+	private static void getRecommendations() {
+        try {
+            String url = "https://smartroomx.eu-gb.mybluemix.net/ugur";
+            URL obj = new URL(url);
+            HttpURLConnection con = (HttpURLConnection) obj.openConnection();
+            // optional default is GET
+            con.setRequestMethod("GET");
+            //add request header
+            //con.setRequestProperty("User-Agent", "Mozilla/5.0");
+            int responseCode = con.getResponseCode();
+            System.out.println("\nSending 'GET' request to URL : " + url);
+            System.out.println("Response Code : " + responseCode);
+            BufferedReader in = new BufferedReader(
+                    new InputStreamReader(con.getInputStream()));
+            String inputLine;
+            StringBuffer response = new StringBuffer();
+            while ((inputLine = in.readLine()) != null) {
+                response.append(inputLine);
+            }
+            in.close();
+            //print in String
+            System.out.println(response.toString());
+            //Read JSON response and print
+            /*JSONObject myResponse = new JSONObject(response.toString());
+            System.out.println("result after Reading JSON Response");
+            System.out.println("statusCode- "+myResponse.getString("statusCode"));
+            System.out.println("statusMessage- "+myResponse.getString("statusMessage"));
+            System.out.println("ipAddress- "+myResponse.getString("ipAddress"));
+            System.out.println("countryCode- "+myResponse.getString("countryCode"));
+            System.out.println("countryName- "+myResponse.getString("countryName"));
+            System.out.println("regionName- "+myResponse.getString("regionName"));
+            System.out.println("cityName- "+myResponse.getString("cityName"));
+            System.out.println("zipCode- "+myResponse.getString("zipCode"));
+            System.out.println("latitude- "+myResponse.getString("latitude"));
+            System.out.println("longitude- "+myResponse.getString("longitude"));
+            System.out.println("timeZone- "+myResponse.getString("timeZone"));*/
+        }
+        catch(Exception e){
+            System.out.println(e);
+	    }
+    }
 
 }
